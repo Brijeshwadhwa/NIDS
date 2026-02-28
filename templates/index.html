@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted small mb-0">Real-time network intrusion detection</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Sniffer Status</h6>
+                <p class="mb-2">
+                    <span id="status-dot" class="status-dot inactive"></span>
+                    <span id="status-text">Stopped</span>
+                </p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-start">Start Sniffing</button>
+                    <button type="button" class="btn btn-danger btn-sm" id="btn-stop" disabled>Stop Sniffing</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Total Packets</h6>
+                <p class="mb-0 fs-3 mono" id="total-packets">0</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Total Alerts</h6>
+                <p class="mb-0 fs-3 mono" id="total-alerts">0</p>
+                <a href="/logview" class="small text-decoration-none">View all logs →</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header">Protocol Distribution</div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0" id="protocol-list">
+                    <li class="d-flex justify-content-between py-1"><span>TCP</span><span class="mono" id="proto-tcp">0</span></li>
+                    <li class="d-flex justify-content-between py-1"><span>UDP</span><span class="mono" id="proto-udp">0</span></li>
+                    <li class="d-flex justify-content-between py-1"><span>ICMP</span><span class="mono" id="proto-icmp">0</span></li>
+                    <li class="d-flex justify-content-between py-1"><span>ARP</span><span class="mono" id="proto-arp">0</span></li>
+                    <li class="d-flex justify-content-between py-1"><span>Other</span><span class="mono" id="proto-other">0</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 mb-3">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Live Alert Feed</span>
+                <span class="badge bg-secondary" id="feed-count">0</span>
+            </div>
+            <div class="card-body p-0" style="max-height: 320px; overflow-y: auto;">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Source IP</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alert-feed">
+                        <tr><td colspan="4" class="text-center text-muted py-4">No alerts yet. Start sniffing to monitor.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const POLL_INTERVAL = 2000;
+
+    function setBadgeClass(type) {
+        const t = (type || '').toLowerCase();
+        if (t.includes('syn')) return 'badge-syn';
+        if (t.includes('port')) return 'badge-port';
+        if (t.includes('icmp')) return 'badge-icmp';
+        if (t.includes('arp')) return 'badge-arp';
+        if (t.includes('brute')) return 'badge-brute';
+        return 'bg-secondary';
+    }
+
+    function fetchStats() {
+        fetch('/stats')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('total-packets').textContent = data.total_packets.toLocaleString();
+                document.getElementById('total-alerts').textContent = data.total_alerts.toLocaleString();
+                const dot = document.getElementById('status-dot');
+                const text = document.getElementById('status-text');
+                const startBtn = document.getElementById('btn-start');
+                const stopBtn = document.getElementById('btn-stop');
+                if (data.sniffing_active) {
+                    dot.className = 'status-dot active';
+                    text.textContent = 'Running';
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } else {
+                    dot.className = 'status-dot inactive';
+                    text.textContent = 'Stopped';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+                const dist = data.protocol_distribution || {};
+                document.getElementById('proto-tcp').textContent = (dist.TCP || 0).toLocaleString();
+                document.getElementById('proto-udp').textContent = (dist.UDP || 0).toLocaleString();
+                document.getElementById('proto-icmp').textContent = (dist.ICMP || 0).toLocaleString();
+                document.getElementById('proto-arp').textContent = (dist.ARP || 0).toLocaleString();
+                document.getElementById('proto-other').textContent = (dist.Other || 0).toLocaleString();
+            })
+            .catch(() => {});
+    }
+
+    function fetchAlerts() {
+        fetch('/alerts')
+            .then(r => r.json())
+            .then(data => {
+                const alerts = data.alerts || [];
+                document.getElementById('feed-count').textContent = alerts.length;
+                const tbody = document.getElementById('alert-feed');
+                if (alerts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No alerts yet. Start sniffing to monitor.</td></tr>';
+                } else {
+                    tbody.innerHTML = alerts.slice().reverse().map(a => `
+                        <tr>
+                            <td class="mono small">${a.timestamp || '-'}</td>
+                            <td><span class="badge ${setBadgeClass(a.attack_type)}">${a.attack_type || '-'}</span></td>
+                            <td class="mono">${a.source_ip || '-'}</td>
+                            <td class="small">${a.description || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            })
+            .catch(() => {});
+    }
+
+    function poll() {
+        fetchStats();
+        fetchAlerts();
+    }
+
+    document.getElementById('btn-start').addEventListener('click', function() {
+        fetch('/start', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(r => r.json())
+            .then(data => { if (data.ok) poll(); });
+    });
+
+    document.getElementById('btn-stop').addEventListener('click', function() {
+        fetch('/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(r => r.json())
+            .then(data => { if (data.ok) poll(); });
+    });
+
+    poll();
+    setInterval(poll, POLL_INTERVAL);
+})();
+</script>
+{% endblock %}

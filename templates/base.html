@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NIDS{% endblock %} | Network Intrusion Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-amber: #d29922;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .text-muted { color: var(--text-muted) !important; }
+        .navbar {
+            background: var(--bg-card) !important;
+            border-bottom: 1px solid var(--border);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--accent) !important;
+        }
+        .nav-link {
+            color: var(--text-muted) !important;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--accent) !important;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text);
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.active { background: var(--accent-green); }
+        .status-dot.inactive { background: var(--accent-red); animation: none; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .btn-primary {
+            background: #238636;
+            border-color: #238636;
+        }
+        .btn-primary:hover {
+            background: #2ea043;
+            border-color: #2ea043;
+        }
+        .btn-danger {
+            background: #da3633;
+            border-color: #da3633;
+        }
+        .btn-danger:hover {
+            background: #b62324;
+            border-color: #b62324;
+        }
+        .table {
+            color: var(--text);
+        }
+        .table th {
+            border-color: var(--border);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .table td {
+            border-color: var(--border);
+        }
+        .badge-syn { background: #f85149; }
+        .badge-port { background: #d29922; }
+        .badge-icmp { background: #a371f7; }
+        .badge-arp { background: #db6d28; }
+        .badge-brute { background: #da3633; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">🛡️ NIDS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'logs_page' %}active{% endif %}" href="/logview">Logs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

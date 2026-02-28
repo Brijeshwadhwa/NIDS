@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Logs{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">Alert Logs</h1>
+            <p class="text-muted small mb-0">All alerts stored in database</p>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" id="btn-refresh">
+            Refresh
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Attack Type</th>
+                        <th>Source IP</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-tbody">
+                    <tr><td colspan="4" class="text-center text-muted py-5">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    function setBadgeClass(type) {
+        const t = (type || '').toLowerCase();
+        if (t.includes('syn')) return 'badge-syn';
+        if (t.includes('port')) return 'badge-port';
+        if (t.includes('icmp')) return 'badge-icmp';
+        if (t.includes('arp')) return 'badge-arp';
+        if (t.includes('brute')) return 'badge-brute';
+        return 'bg-secondary';
+    }
+
+    function loadLogs() {
+        fetch('/logs')
+            .then(r => r.json())
+            .then(data => {
+                const alerts = data.alerts || [];
+                const tbody = document.getElementById('logs-tbody');
+                if (alerts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-5">No alerts in database.</td></tr>';
+                } else {
+                    tbody.innerHTML = alerts.map(a => `
+                        <tr>
+                            <td class="mono small">${a.timestamp || '-'}</td>
+                            <td><span class="badge ${setBadgeClass(a.attack_type)}">${a.attack_type || '-'}</span></td>
+                            <td class="mono">${a.source_ip || '-'}</td>
+                            <td class="small">${a.description || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            })
+            .catch(() => {
+                document.getElementById('logs-tbody').innerHTML = '<tr><td colspan="4" class="text-center text-danger py-5">Failed to load logs.</td></tr>';
+            });
+    }
+
+    document.getElementById('btn-refresh').addEventListener('click', loadLogs);
+    loadLogs();
+})();
+</script>
+{% endblock %}
